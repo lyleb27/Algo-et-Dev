@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 ex8_multi/multi_scraper.py
 
@@ -8,7 +7,7 @@ Scraper multi-sources modulaire pour:
  - realpython.github.io/fake-jobs
 
 Chaque plugin renvoie une liste d'items (dict) dans un format libre mais on ajoute metadata 'source'.
-Exécuter: python multi_scraper.py
+Exécuter: python main.py
 """
 import requests, os, json, time, random
 from bs4 import BeautifulSoup
@@ -20,7 +19,7 @@ def create_session():
     s.headers.update({"User-Agent":"multi-scraper/1.0"})
     return s
 
-# --- Plugin: books (lightweight: first page only to be fast) ---
+# --- Plugin: books ---
 def scrape_books(session, limit_pages=2):
     base = "https://books.toscrape.com/"
     results = []
@@ -41,7 +40,7 @@ def scrape_books(session, limit_pages=2):
         time.sleep(random.uniform(0.2,0.7))
     return results
 
-# --- Plugin: quotes (all pages) ---
+# --- Plugin: quotes (toutes les pages) ---
 def scrape_quotes(session):
     base = "http://quotes.toscrape.com/"
     url = base
@@ -88,7 +87,6 @@ def main(outdir="ex8_multi/data"):
         try:
             print(f"Scraping {name} ...")
             items = fn(session)
-            # attach source metadata per item
             unified["sources"][name] = {"count": len(items), "items": items}
             time.sleep(random.uniform(0.2,0.8))
         except Exception as e:

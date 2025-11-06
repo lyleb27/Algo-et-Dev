@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Exercice 5 - Navigation catégorielle avancée
 Cartographie arborescente + statistiques par catégorie.

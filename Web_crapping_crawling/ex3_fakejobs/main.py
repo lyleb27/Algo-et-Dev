@@ -1,8 +1,7 @@
-#!/usr/bin/env python3
 """
-ex3_fakejobs/scraper_fakejobs.py
+ex3_fakejobs/main.py
 Scraper pour https://realpython.github.io/fake-jobs/
-Filtre: n'affiche que les offres contenant 'Python' (case-insensitive)
+Filtre: n'affiche que les offres contenant 'Python'
 Sortie: ex3_fakejobs/data/fakejobs_python.csv
 """
 import requests
@@ -40,7 +39,6 @@ def normalize_date(raw):
         return raw.strip()
 
 def is_python_job(text_fields):
-    # text_fields: list of strings to scan
     combined = " ".join([t or "" for t in text_fields]).lower()
     return "python" in combined
 
@@ -56,31 +54,24 @@ def scrape(min_date=None):
         title = job.select_one("h2.title").get_text(strip=True) if job.select_one("h2.title") else ""
         company = job.select_one("h3.company").get_text(strip=True) if job.select_one("h3.company") else ""
         location = job.select_one("p.location").get_text(strip=True) if job.select_one("p.location") else ""
-        # find apply link
         apply_elem = job.find("a", string="Apply")
         apply_url = urljoin(BASE, apply_elem["href"]) if apply_elem and apply_elem.get("href") else ""
-        # there may be meta such as contract and date inside <p> with class "is-small"
         extras = job.select("p.is-small")
         contract = ""
         date_raw = ""
         for ex in extras:
             text = ex.get_text(" ", strip=True)
-            # heuristics
             if "Contract" in text or "Full" in text or "Part" in text or "Intern" in text:
                 contract = text
             if any(c.isdigit() for c in text):
-                # likely date
                 date_raw = text
         date_norm = normalize_date(date_raw)
-        # filter by Python
         if not is_python_job([title, company, location, contract]):
             continue
-        # deduplicate by title+company+location
         key = (title.strip().lower(), company.strip().lower(), location.strip().lower())
         if key in seen:
             continue
         seen.add(key)
-        # optional date filtering
         if min_date:
             try:
                 if date_norm:

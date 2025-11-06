@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Exercice 4 - Analyse de marché livresque
 Scraper + analyse statistique + visualisations matplotlib.

@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-ex1_books/scraper_books.py
+ex1_books/main.py
 Scraper complet pour https://books.toscrape.com/
 Sauvegarde: ex1_books/data/books_<timestamp>.json
 """
@@ -34,19 +33,16 @@ RATING_MAP = {
 }
 
 def parse_price(text):
-    # Ex: '£51.77'
     try:
         return float(re.sub(r"[^\d.,]", "", text).replace(",", "."))
     except:
         return None
 
 def parse_stock(text):
-    # Ex: "In stock (22 available)"
     m = re.search(r"(\d+)", text)
     return int(m.group(1)) if m else 0
 
 def parse_rating(tag):
-    # class contains "star-rating Three"
     classes = tag.get("class", [])
     for cls in classes:
         if cls in RATING_MAP:
@@ -61,7 +57,6 @@ def scrape_book_detail(session, detail_url):
     soup = BeautifulSoup(resp.content, "lxml")
     desc_tag = soup.select_one("#content_inner .product_page > p")
     description = desc_tag.get_text(strip=True) if desc_tag else ""
-    # category breadcrumb: home > Books > category > ...
     category = ""
     crumbs = soup.select(".breadcrumb li a")
     if len(crumbs) >= 3:
@@ -78,10 +73,7 @@ def scrape():
     page_url = urljoin(BASE, "catalogue/page-1.html")
     books = []
     page_index = 1
-    # There is also index.html for first page; handle both
-    # We'll iterate until no "next" found
     current = BASE
-    # Start at catalogue index (site uses index.html) -> we'll use BASE and follow pagination
     current = BASE
     print("Starting scraping books.toscrape.com ...")
     while True:
@@ -92,10 +84,8 @@ def scrape():
             break
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, "lxml")
-        # each book in .product_pod
         pods = soup.select(".product_pod")
         if not pods:
-            # maybe we're on catalogue page under /catalogue/
             pods = soup.select(".product_pod")
         for pod in pods:
             title_tag = pod.select_one("h3 a")
@@ -105,7 +95,6 @@ def scrape():
             price_tag = pod.select_one(".price_color")
             price = parse_price(price_tag.get_text()) if price_tag else None
             rating = parse_rating(pod.select_one(".star-rating") or pod)
-            # Visit detail page
             respectful_delay(0.5, 1.5)
             try:
                 detail = scrape_book_detail(session, book_url)
@@ -113,7 +102,6 @@ def scrape():
                 print(f"Error fetching detail {book_url}: {e}")
                 detail = None
             if detail is None:
-                # graceful fallback
                 detail = {"description": "", "category": "", "stock": 0, "image_url": ""}
             book = {
                 "title": title,
@@ -126,17 +114,14 @@ def scrape():
                 "image_url": detail["image_url"]
             }
             books.append(book)
-        # next page?
         next_btn = soup.select_one(".next a")
         if next_btn and next_btn.get("href"):
             current = urljoin(current, next_btn["href"])
             page_index += 1
             print(f"Scraping page {page_index} ...")
             continue
-        # else finished
         break
 
-    # Save JSON with timestamp
     timestamp = datetime.utcnow().strftime("%Y-%m-%dT%H%M%SZ")
     outdir = os.path.join(os.path.dirname(__file__), "data")
     os.makedirs(outdir, exist_ok=True)

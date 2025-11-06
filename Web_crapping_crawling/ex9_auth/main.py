@@ -1,10 +1,9 @@
-#!/usr/bin/env python3
 """
 ex9_auth/auth_session.py
 
 Gère login + session persistence pour http://quotes.toscrape.com/login
 Exemple d'utilisation:
- python auth_session.py --username foo --password bar
+python main.py --username foo --password bar
 """
 import requests, os, argparse, pickle, time
 from bs4 import BeautifulSoup
@@ -33,16 +32,13 @@ def save_session(session, path=SESSION_FILE):
         pickle.dump(session, f)
 
 def login(session, username, password, save=False):
-    # get login page to fetch csrf token
     r = session.get(LOGIN_URL, timeout=10); r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     token_tag = soup.select_one("input[name='csrf_token']")
     token = token_tag["value"] if token_tag else ""
     payload = {"username": username, "password": password, "csrf_token": token}
-    # submit
     post = session.post(LOGIN_URL, data=payload, timeout=10)
     post.raise_for_status()
-    # check if login successful: on this site they redirect to / after login and show "Logout" link
     if "Logout" in post.text or "logout" in post.text.lower():
         print("Login seems successful.")
         if save:
@@ -50,7 +46,6 @@ def login(session, username, password, save=False):
             print(f"Session saved to {SESSION_FILE}")
         return True
     else:
-        # sometimes the site returns same page with error; try GET profile or other protected page
         print("Login may have failed (no 'Logout' found).")
         return False
 
@@ -67,7 +62,6 @@ def main():
     parser.add_argument("--save", action="store_true", help="sauvegarder session dans un fichier")
     args = parser.parse_args()
 
-    # try load
     sess = load_session()
     if sess:
         print("Session chargée depuis le disque.")

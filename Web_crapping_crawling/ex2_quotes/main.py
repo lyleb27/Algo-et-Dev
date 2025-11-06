@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
 """
-ex2_quotes/scraper_quotes.py
+ex2_quotes/main.py
 Scraper pour http://quotes.toscrape.com/
 Sorties:
  - ex2_quotes/data/authors_cache.json
@@ -45,8 +44,7 @@ def save_cache(path, data):
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 def scrape_author(session, author_relative, cache):
-    name = author_relative  # placeholder, will be replaced
-    # author_relative expected as relative URL like /author/Albert-Einstein
+    name = author_relative
     url = urljoin(BASE, author_relative)
     if url in cache:
         return cache[url]
@@ -54,7 +52,6 @@ def scrape_author(session, author_relative, cache):
     resp = session.get(url, timeout=10)
     resp.raise_for_status()
     soup = BeautifulSoup(resp.content, "lxml")
-    # page structure: h3.author-title, p.author-born-date, p.author-born-location, div.author-description
     title = soup.select_one(".author-title")
     name = title.get_text(strip=True) if title else ""
     born_date = soup.select_one(".author-born-date")
@@ -91,12 +88,9 @@ def scrape():
             author = qb.select_one(".author").get_text(strip=True)
             tag_elems = qb.select(".tags .tag")
             tags = [t.get_text(strip=True) for t in tag_elems]
-            # author link relative
             author_link = qb.select_one("a[href*='/author/']")
             author_rel = author_link["href"] if author_link else ""
-            # fetch author details (cached)
             author_data = scrape_author(session, author_rel, cache) if author_rel else {"name": author, "born_date":"", "born_location":"", "bio":""}
-            # Add nodes/edges
             quote_id = f"quote_{quotes_count}"
             G.add_node(quote_id, type="quote", text=text)
             G.add_node(author, type="author", born_date=author_data.get("born_date",""), born_location=author_data.get("born_location",""), bio=author_data.get("bio",""))
@@ -105,7 +99,6 @@ def scrape():
                 G.add_node(tag, type="tag")
                 G.add_edge(quote_id, tag, relation="has_tag")
             quotes_count += 1
-        # next?
         next_btn = soup.select_one(".next a")
         if next_btn and next_btn.get("href"):
             current = urljoin(current, next_btn["href"])
@@ -120,11 +113,9 @@ def scrape():
     nx.write_gexf(G, gexf_path)
     print(f"Saved authors cache to {cache_path}")
     print(f"Saved graph to {gexf_path}")
-    # Analytics: top authors by degree (number of quotes)
     authors = [(n, d) for n,d in G.nodes(data=True) if d.get("type")=="author"]
     counts = []
     for name, attrs in authors:
-        # number of connected quote nodes
         deg = sum(1 for nb in G.neighbors(name) if G.nodes[nb].get("type")=="quote")
         counts.append((name, deg))
     counts.sort(key=lambda x: x[1], reverse=True)

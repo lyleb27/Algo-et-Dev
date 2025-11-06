@@ -1,9 +1,8 @@
-#!/usr/bin/env python3
 """
 ex7_pipeline/data_cleaning.py
 
 Pipeline simple de data cleaning pour datasets de scraping (ex: books).
-Exécuter: python data_cleaning.py --input path/to/raw.json --outdir ex7_pipeline/data
+Exécuter: python main.py --input path/to/raw.json --outdir ex7_pipeline/data
 """
 import os, json, argparse, re
 import pandas as pd
@@ -26,7 +25,6 @@ def parse_rating(x):
     try:
         return int(x)
     except:
-        # try words
         mapping = {"one":1,"two":2,"three":3,"four":4,"five":5}
         s=str(x).strip().lower()
         return mapping.get(s, np.nan)
@@ -36,7 +34,6 @@ def safe_str(x):
     return str(x).strip()
 
 def detect_outliers(series):
-    # simple IQR method
     q1 = series.quantile(0.25)
     q3 = series.quantile(0.75)
     iqr = q3 - q1
@@ -48,7 +45,6 @@ def load_input(path):
     if path.lower().endswith(".json"):
         with open(path,"r",encoding="utf-8") as f:
             payload = json.load(f)
-        # try to extract list of books
         if isinstance(payload, dict) and "books" in payload:
             return pd.DataFrame(payload["books"])
         if isinstance(payload, list):
@@ -58,9 +54,7 @@ def load_input(path):
         return pd.read_csv(path)
 
 def clean_df(df):
-    # normalize columns: title, price, rating, category, stock, date (if present)
     df = df.copy()
-    # common columns may or may not exist
     if "title" in df.columns:
         df["title"] = df["title"].apply(safe_str)
     if "price" in df.columns:
@@ -79,11 +73,9 @@ def clean_df(df):
         df["stock"] = df["stock"].apply(parse_stock)
     if "category" in df.columns:
         df["category"] = df["category"].apply(safe_str)
-    # trim strings columns
     for c in df.select_dtypes(include=["object"]).columns:
         df[c] = df[c].apply(lambda s: s.strip() if isinstance(s,str) else s)
 
-    # Impute simple: price -> median, rating -> mode, stock -> 0 if missing
     report = {}
     if "price" in df.columns:
         median_price = df["price"].median(skipna=True)
@@ -95,11 +87,9 @@ def clean_df(df):
     if "stock" in df.columns:
         df["stock"].fillna(0, inplace=True)
 
-    # Detect outliers on price
     price_outliers = detect_outliers(df["price"]) if "price" in df.columns else pd.Series([])
     report["price_outliers_count"] = int(price_outliers.shape[0])
 
-    # Basic quality metrics
     quality = {
         "n_rows": int(df.shape[0]),
         "missing_per_column": df.isna().sum().to_dict()

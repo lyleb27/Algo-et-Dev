@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Exercice 6 - Scraper résilient
 Reprise sur interruption + log + retry + throttling + IP freeze detection.
@@ -26,7 +25,7 @@ def configure_logging(logdir):
     )
 
 
-# --- Session with retry --------------------------------------------
+# --- Session avec retry --------------------------------------------
 
 def session_retry():
     s = requests.Session()
@@ -96,7 +95,6 @@ def main():
     current = BASE
     page_index = 1
 
-    # if resumed
     if progress["done_pages"]:
         page_index = max(progress["done_pages"]) + 1
         current = urljoin(BASE, f"catalogue/page-{page_index}.html")
