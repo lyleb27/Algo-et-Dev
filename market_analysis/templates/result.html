@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Résultat de l'analyse</title>
+</head>
+<body>
+    <h1>Résultat de l'analyse de marché</h1>
+
+    {% if parse_error %}
+    <div style="color:orange;">
+        <strong>Attention :</strong> Impossible d'interpréter strictement la réponse JSON du LLM. Résultat approximatif appliqué.<br>
+        Erreur: {{ parse_error }}
+    </div>
+    {% endif %}
+
+    <h2>Texte brut renvoyé par le LLM</h2>
+    <pre>{{ raw_llm }}</pre>
+
+    <h2>Données structurées</h2>
+    <pre>{{ structured | tojson(indent=2) }}</pre>
+
+    <h2>Télécharger le PDF comparatif</h2>
+    <a href="/download/{{ pdf_file }}">Télécharger le PDF</a>
+
+    <h2>Envoyer le rapport par email</h2>
+    <form action="/send_report" method="post">
+        Destinataire: <input type="email" name="to_email" required>
+        <input type="hidden" name="pdf_path" value="{{ pdf_path }}">
+        <input type="submit" value="Envoyer">
+    </form>
+
+    <br><br>
+    <a href="/">Nouvelle analyse</a>
+</body>
+</html>
